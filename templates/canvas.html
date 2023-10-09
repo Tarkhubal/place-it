@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <title>Place It.</title>
+   <meta charset="UTF-8">
+</head>
+<style>
+   body {
+      background-color: #db4040;
+   }
+   
+   #page-head,
+   #rules,
+   #api-docs,
+   h1, h2, h3, h4, h5, p {
+      font-family: Verdana;
+      color: white;
+   }
+   
+   #page-head {
+      background-color: #bbbbff;
+      padding: 12% 10%;
+      margin-bottom: 5%;
+   }
+   
+   #version {
+      font-size: 4pt;
+   }
+   
+   #page-title {
+      font-size: 50pt;
+   }
+   
+   #color-picker {
+      display: flex
+   }
+   
+   #color-picker input,
+   #color-picker button {
+      width: 13vw;
+      height: 11vw;
+      max-width: 130px;
+      max-height: 110px;
+      justify-self: center;
+      margin-right: 2vw;
+      font-size: 18pt;
+      background-color: #7aef9a;
+      border-radius: 10px;
+      border: 0;
+      box-shadow: 0.2em 0.1em 0.3em #bbbb40;
+      text-transform: uppercase;
+      color: black;
+      padding: 1%;
+   }
+   
+   #color-picker input:hover,
+   #color-picker button:hover {
+      box-shadow: 0em 0em 0.4em cyan;
+      background-color: lightblue;
+      color: black;
+   }
+   
+   .separateur-blanc {
+      background-color: #AAAAAA; /* Couleur de la ligne séparatrice */
+   }
+</style>
+<body>
+   <div id="page-head">
+      <h1 id="page-title">Place It.</h1>
+      <h5>Vous avez une toile,<br>Vous avez des couleurs,<br>Alors faites du pixel art !</h5>
+   </div>
+
+   <h5>Sélectionnez ici la couleur à placer :</h5>
+   <div id="color-picker">
+      <input type="color" id="color-input">
+      <button onclick="setColor(255, 0, 0)">Rouge</button>
+      <button onclick="setColor(0, 255, 0)">Vert</button>
+      <button onclick="setColor(0, 0, 255)">Bleu</button>
+      <button onclick="setColor(255, 255, 255)">Blanc</button>
+      <button onclick="setColor(0, 0, 0)">Noir</button>
+   </div>
+
+   <canvas id="toile" width="{{ toile[0]|length * taille }}" height="{{ toile|length * taille }}"></canvas>
+      
+   <div id="rules">
+      <h2>Règlement :</h2>
+      <ol>
+         <li>Bots de grief/DDoS = ban IP définitif (bots de build autorisés)</li>
+         <li>Insultes/politique/pOrNoGrApHiE/grief = interdit + suppression, récidive = ban IP (définitif ou temporaire suivant l'envie du développeur 👀)</li>
+         <li>Sinon vous pouvez faire ce que vous souhaitez dessus ! ❤️</li>
+      </ol>
+   </div>
+   <div id="api-docs">
+      <h3>API bientôt publique ! (et sans limite)</h3>
+   </div>
+   
+   <p id="version">Version alpha mise à jour le 28/07/2023</p>
+   
+   
+   <div id="script">
+      <script>
+         var toile = {{ toile|tojson }};
+         var taille = {{ taille }};
+         var canvas = document.getElementById('toile');
+         var ctx = canvas.getContext('2d');
+        
+         var selectedColor = [255, 0, 0]; // Couleur par défaut (rouge)
+
+         function setColor(r, g, b) {
+            selectedColor = [r, g, b];
+            updateColorPicker(selectedColor);
+         }
+
+         function updateColorPicker(color) {
+            var colorInput = document.getElementById('color-input');
+            if (colorInput) {
+               var hexColor = rgbToHex(color[0], color[1], color[2]);
+               colorInput.value = hexColor;
+            }
+         }
+
+         function rgbToHex(r, g, b) {
+            var hexR = r.toString(16).padStart(2, '0');
+            var hexG = g.toString(16).padStart(2, '0');
+            var hexB = b.toString(16).padStart(2, '0');
+            return '#' + hexR + hexG + hexB;
+         }
+    
+         function getColorFromInput() {
+            var colorInput = document.getElementById('color-input');
+            if (colorInput) {
+               var hexColor = colorInput.value;
+               var r = parseInt(hexColor.slice(1, 3), 16);
+               var g = parseInt(hexColor.slice(3, 5), 16);
+               var b = parseInt(hexColor.slice(5, 7), 16);
+               return [r, g, b];
+            }
+            return null;
+         }
+
+         function dessinerToile() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (var y = 0; y < toile.length; y++) {
+               for (var x = 0; x < toile[y].length; x++) {
+                  var couleur = 'rgb(' + toile[y][x][0] + ',' + toile[y][x][1] + ',' + toile[y][x][2] + ')';
+                  ctx.fillStyle = couleur;
+                  ctx.fillRect(x * taille, y * taille, taille, taille);
+
+                  // Dessiner une ligne séparatrice si le pixel actuel est blanc et a des pixels blancs adjacents
+                  if (toile[y][x][0] === 255 && toile[y][x][1] === 255 && toile[y][x][2] === 255) {
+                     if (x > 0 && toile[y][x - 1][0] === 255 && toile[y][x - 1][1] === 255 && toile[y][x - 1][2] === 255) {
+                        ctx.fillStyle = 'rgb(170, 170, 170)'; // Couleur de la ligne séparatrice
+                        ctx.fillRect(x * taille, y * taille, 1, taille);
+                     }
+                     if (y > 0 && toile[y - 1][x][0] === 255 && toile[y - 1][x][1] === 255 && toile[y - 1][x][2] === 255) {
+                        ctx.fillStyle = 'rgb(170, 170, 170)'; // Couleur de la ligne séparatrice
+                        ctx.fillRect(x * taille, y * taille, taille, 1);
+                     }
+                  }
+               }
+            }
+         }
+
+
+         canvas.addEventListener('click', function(event) {
+            var rect = canvas.getBoundingClientRect();
+            var x = Math.floor((event.clientX - rect.left) / taille);
+            var y = Math.floor((event.clientY - rect.top) / taille);var rgb = getColorFromInput();
+         if (rgb) {
+            var r = parseInt(rgb[0]);
+            var g = parseInt(rgb[1]);
+            var b = parseInt(rgb[2]);
+            if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+               if (r >= 0 && r <= 255 && g >= 0 && g <= 255 && b >= 0 && b <= 255) {
+                  fetch('/placer_pixel', {
+                     method: 'POST',
+                     body: JSON.stringify({x: x, y: y, r: r, g: g, b: b}),
+                     headers: {
+                        'Content-Type': 'application/json'
+                     }
+                  }).then(function(response) {
+                  if (response.ok) {
+                     toile[y][x] = [r, g, b];
+                     dessinerToile();
+                  } else {
+                     alert('Erreur lors du placement du pixel : ' + response.statusText);
+                  }
+               }).catch(function(error) {
+                  alert('Erreur lors du placement du pixel : ' + error.message);
+               });
+               } else {
+                  alert('Les valeurs RVB doivent être comprises entre 0 et 255.');
+               }
+            } else {
+               alert('Format RVB invalide.');
+            }
+         } else {
+            alert('Format RVB invalide.');
+         }
+         });
+
+         updateColorPicker(selectedColor);
+         dessinerToile();
+      </script>
+   </div>
+</body>
+</html>
